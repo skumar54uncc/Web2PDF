@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web to PDF Converter</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(to bottom right, #d3eaf9, #f8e1f4);
+      --container-bg: #ffffff;
+      --text-color: #333;
+    }
+
+    body.dark-mode {
+      --bg-gradient: linear-gradient(to bottom right, #1f1f1f, #2c2c2c);
+      --container-bg: #1e1e1e;
+      --text-color: #e0e0e0;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background: var(--container-bg);
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+      width: 100%;
+      max-width: 600px;
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8em;
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+
+    textarea, input[type="text"], input[type="file"] {
+      width: 100%;
+      padding: 12px;
+      margin-top: 6px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    textarea { min-height: 100px; resize: vertical; }
+
+    .drag-drop {
+      border: 2px dashed #bbb;
+      padding: 18px;
+      text-align: center;
+      color: #777;
+      border-radius: 10px;
+      margin-top: 12px;
+      font-size: 15px;
+    }
+
+    .btn-submit, .btn-reset, .btn-cancel {
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 15px;
+      margin-top: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    .btn-submit {
+      background: #1e88e5;
+      color: white;
+    }
+
+    .btn-submit:hover {
+      background: #1565c0;
+      transform: scale(1.03);
+    }
+
+    .btn-cancel {
+      background: #888;
+      color: white;
+      display: none;
+    }
+
+    .btn-reset {
+      background: #e53935;
+      color: white;
+    }
+
+    .btn-reset:hover {
+      background: #c62828;
+      transform: scale(1.03);
+    }
+
+    .toggle-btn {
+      float: right;
+      font-size: 13px;
+      padding: 6px 10px;
+      border: 1px solid var(--text-color);
+      background: transparent;
+      color: var(--text-color);
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .status-area {
+      margin-top: 25px;
+      display: none;
+    }
+
+    .progress-bar {
+      background-color: #e0e0e0;
+      border-radius: 10px;
+      height: 16px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background-color: #4caf50;
+      transition: width 0.3s ease;
+    }
+
+    .summary {
+      font-size: 13px;
+      color: #777;
+      margin-top: 12px;
+    }
+
+    #linkStatus div {
+      font-size: 14px;
+      margin-top: 6px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #4caf50;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #323232;
+      color: #fff;
+      padding: 14px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      opacity: 0;
+      animation: fadein 0.5s forwards, fadeout 0.5s 3.5s forwards;
+      z-index: 1000;
+    }
+
+    @keyframes fadein {
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeout {
+      to { opacity: 0; }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button class="toggle-btn" onclick="toggleTheme()">🌗 Toggle Theme</button>
+    <h1><i class="fas fa-globe"></i> Web to PDF Converter</h1>
+
+    <form id="uploadForm" method="post" enctype="multipart/form-data">
+      <label for="urls">Paste URLs:</label>
+      <textarea id="urls" name="urls" placeholder="Enter one or more URLs..."></textarea>
+
+      <label for="gdoc">Public Google Doc Link:</label>
+      <input type="text" id="gdoc" name="gdoc" placeholder="https://docs.google.com/...">
+
+      <label for="file">Upload File (PDF or DOCX):</label>
+      <input type="file" id="file" name="file">
+      <div class="drag-drop" id="dropZone"><i class="fas fa-folder-open"></i> Drag & Drop File Here</div>
+
+      <button id="submitBtn" type="submit" class="btn-submit"><i class="fas fa-magic"></i> Extract Links & Process</button>
+      <button type="button" id="cancelBtn" class="btn-cancel"><i class="fas fa-ban"></i> Cancel Processing</button>
+    </form>
+
+    <form action="{{ url_for('main.reset_app') }}" method="get">
+      <button type="submit" class="btn-reset"><i class="fas fa-sync-alt"></i> Reset App (Clear Outputs)</button>
+    </form>
+
+    <div id="statusArea" class="status-area">
+      <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+      <div id="statusMessage" class="status-message" style="margin-top: 10px;"><div class="spinner"></div></div>
+      <div class="summary" id="summaryDetails"></div>
+    </div>
+
+    <div id="linkStatus" class="summary" style="text-align:left; display:none;"></div>
+  </div>
+
+  <div id="toast" class="toast" style="display:none;"></div>
+
+  <script>
+    const uploadForm = document.getElementById("uploadForm");
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("file");
+    const linkStatus = document.getElementById("linkStatus");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const statusMessage = document.getElementById("statusMessage");
+    let controller = null;
+
+    function showToast(msg, color = "#323232") {
+      const toast = document.getElementById("toast");
+      toast.innerText = msg;
+      toast.style.backgroundColor = color;
+      toast.style.display = "block";
+      setTimeout(() => { toast.style.display = "none"; }, 4000);
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle("dark-mode");
+    }
+
+    function launchConfetti() {
+      confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 } });
+    }
+
+    dropZone.addEventListener("dragover", e => {
+      e.preventDefault();
+      dropZone.style.backgroundColor = "#f0f0f0";
+    });
+
+    dropZone.addEventListener("dragleave", () => dropZone.style.backgroundColor = "");
+
+    dropZone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropZone.style.backgroundColor = "";
+      if (e.dataTransfer.files.length > 0) {
+        fileInput.files = e.dataTransfer.files;
+      }
+    });
+
+    uploadForm.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      controller = new AbortController();
+
+      const start = Date.now();
+      const submitBtn = document.getElementById("submitBtn");
+      const statusArea = document.getElementById("statusArea");
+      const progressFill = document.getElementById("progressFill");
+      const summary = document.getElementById("summaryDetails");
+
+      submitBtn.disabled = true;
+      cancelBtn.style.display = "block";
+      statusArea.style.display = "block";
+      statusMessage.innerHTML = '<div class="spinner"></div>';
+      summary.innerText = "";
+      linkStatus.innerHTML = "";
+      linkStatus.style.display = "block";
+      progressFill.style.width = "0%";
+
+      const urls = document.getElementById("urls").value.trim().split("\n").filter(line => line.startsWith("http"));
+      urls.forEach(link => {
+        linkStatus.innerHTML += `<div id="url-${btoa(link)}">🔄 ${link}</div>`;
+      });
+
+      let progress = 0;
+      const interval = setInterval(() => {
+        if (progress < 90) {
+          progress += 1;
+          progressFill.style.width = `${progress}%`;
+        }
+      }, 100);
+
+      try {
+        const formData = new FormData(uploadForm);
+        const response = await fetch("/upload", {
+          method: "POST",
+          body: formData,
+          signal: controller.signal
+        });
+
+        if (!response.ok) throw new Error("Upload failed");
+
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+
+        urls.forEach((link, idx) => {
+          setTimeout(() => {
+            const el = document.getElementById(`url-${btoa(link)}`);
+            if (el) el.innerHTML = `✅ ${link}`;
+          }, idx * 200);
+        });
+
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = "all_pdfs.zip";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(downloadUrl);
+
+        clearInterval(interval);
+        progressFill.style.width = "100%";
+        statusMessage.innerHTML = "✅ Done!";
+        const duration = ((Date.now() - start) / 1000).toFixed(2);
+        summary.innerText = `Processed ${urls.length} links in ${duration}s.`;
+        launchConfetti();
+        showToast("✅ ZIP file downloaded successfully", "#43a047");
+
+      } catch (err) {
+        clearInterval(interval);
+        progressFill.style.width = "0%";
+        if (err.name === "AbortError") {
+          statusMessage.innerText = "❌ Processing canceled.";
+          summary.innerText = "Operation canceled by user.";
+          showToast("❌ Processing was cancelled", "#ef5350");
+        } else {
+          statusMessage.innerText = "❌ Something went wrong.";
+          summary.innerText = "Unexpected error occurred.";
+          showToast("❌ Error occurred during processing", "#ef5350");
+        }
+
+        urls.forEach(link => {
+          const el = document.getElementById(`url-${btoa(link)}`);
+          if (el) el.innerHTML = `❌ ${link}`;
+        });
+      }
+
+      cancelBtn.style.display = "none";
+      submitBtn.disabled = false;
+      submitBtn.innerText = "Extract Links & Process";
+    });
+
+    cancelBtn.addEventListener("click", () => {
+      if (controller) {
+        controller.abort();
+        cancelBtn.style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>

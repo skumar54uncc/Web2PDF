@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Extracted Links</title>
+</head>
+<body>
+    <h3>Extracted Links</h3>
+    <ul>
+        {% for link in links %}
+            <li>{{ link }}</li>
+        {% endfor %}
+    </ul>
+
+    <br><br>
+
+    <!-- Reset Button -->
+    <form action="{{ url_for('main.reset_app') }}" method="get">
+        <button type="submit" style="background-color: red; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">
+            🔄 Reset All
+        </button>
+    </form>
+</body>
+</html>

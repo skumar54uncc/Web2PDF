@@ -1,0 +1,7 @@
+Flask
+requests
+beautifulsoup4
+python-docx
+PyMuPDF
+playwright
+python-dotenv
