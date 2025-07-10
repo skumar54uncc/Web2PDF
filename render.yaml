@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: web2pdf
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install chromium
+    startCommand: gunicorn app:app
