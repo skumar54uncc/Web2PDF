@@ -6,3 +6,4 @@ PyMuPDF
 playwright
 python-dotenv
 gunicorn
+aiohttp
