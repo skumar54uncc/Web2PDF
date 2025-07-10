@@ -5,5 +5,8 @@ python-docx
 PyMuPDF
 playwright
 python-dotenv
-gunicorn
 aiohttp
+gunicorn
+lxml
+certifi
+werkzeug
