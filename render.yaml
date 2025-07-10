@@ -6,4 +6,5 @@ services:
       chmod +x render-build.sh
       ./render-build.sh
       pip install -r requirements.txt
-    startCommand: gunicorn run:app
+    startCommand: |
+      playwright install chromium && gunicorn run:app
