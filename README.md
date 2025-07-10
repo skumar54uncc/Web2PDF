@@ -96,35 +96,30 @@ python app.py
 
 ## 📦 Project Structure
 
+```
 Web2PDF/
 │
-├── templates/ # Frontend HTML (Jinja)
-│ └── index.html # The main web UI
+├── app/
+│   ├── templates/                  # Frontend HTML (Jinja)
+│   │   ├── index.html              # The main web UI
+│   │   └── results.html            # Optional: Result view
+│   ├── static/                     # Assets like CSS, JS, icons
+│   ├── __init__.py                 # App factory
+│   ├── pdf_handler.py              # Core PDF generation & Playwright logic
+│   ├── routes.py                   # Flask route definitions
+│   └── utils.py                    # Helper functions for link extraction
 │
-├── static/ # Assets like CSS, JS, icons (optional split)
+├── uploads/                        # Temporary uploaded files
+├── outputs/                        # Generated ZIPs and CSVs
 │
-├── app.py # Flask web server
-├── pdf_handler.py # Core PDF generation and Playwright logic
-├── utils.py # Helper functions for link extraction
-│
-├── requirements.txt # Python dependencies
-├── Procfile # For deployment on platforms like Heroku/DigitalOcean
-├── README.md # This file
+├── config.py                       # (Optional) Configurations (currently empty)
+├── gunicorn_config.py              # Gunicorn setup for deployment
+├── requirements.txt                # Python dependencies
+├── Procfile                        # For deployment on Heroku/DigitalOcean
+├── README.md                       # This file
+└── run.py                          # App entry point
+```
 
-Web2PDF/
-│
-├── templates/ # Frontend HTML (Jinja)
-│ └── index.html # The main web UI
-│
-├── static/ # Assets like CSS, JS, icons (optional split)
-│
-├── app.py # Flask web server
-├── pdf_handler.py # Core PDF generation and Playwright logic
-├── utils.py # Helper functions for link extraction
-│
-├── requirements.txt # Python dependencies
-├── Procfile # For deployment on platforms like Heroku/DigitalOcean
-├── README.md # This file
 
 ## 👨‍💻 Author
 
