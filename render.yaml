@@ -3,6 +3,7 @@ services:
     name: web2pdf
     env: python
     buildCommand: |
-      bash render-build.sh
+      chmod +x render-build.sh
+      ./render-build.sh
       pip install -r requirements.txt
     startCommand: gunicorn run:app
