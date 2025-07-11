@@ -1,28 +1,56 @@
-# Use official Python image
+# Use Python base image
 FROM python:3.10-slim
 
-# Install system dependencies for Chromium
+# Set environment vars
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    wget gnupg unzip curl \
-    libglib2.0-0 libnss3 libgconf-2-4 libfontconfig1 \
-    libxss1 libasound2 libatk-bridge2.0-0 libcups2 libdbus-1-3 \
-    libxcomposite1 libxcursor1 libxdamage1 libxi6 libxtst6 libxrandr2 \
-    libappindicator1 libgtk-3-0 libxshmfence1 libgbm1 fonts-liberation \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    libgtk-3-0 \
+    libnss3 \
+    libasound2 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxrandr2 \
+    libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libdrm2 \
+    libxfixes3 \
+    libxrender1 \
+    libxext6 \
+    libfontconfig1 \
+    libglu1-mesa \
+    libwayland-client0 \
+    libwayland-cursor0 \
+    libwayland-egl1 \
+    libnotify4 \
+    libu2f-udev \
+    xdg-utils \
+    fonts-liberation \
+    wget \
+    xvfb \
+    unzip
 
 # Set working directory
 WORKDIR /app
 
-# Copy all code to container
+# Copy app code
 COPY . .
 
 # Install Python dependencies
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt && \
-    playwright install chromium
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
 
-# Expose port
+# Install Playwright dependencies and browser
+RUN playwright install --with-deps
+
+# Expose port (DO uses this)
 EXPOSE 5000
 
-# Start the app with Gunicorn
-CMD ["gunicorn", "run:app", "-c", "gunicorn_config.py"]
+# Run the app with Gunicorn using virtual display
+CMD xvfb-run gunicorn run:app -c gunicorn_config.py
