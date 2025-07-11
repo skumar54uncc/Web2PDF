@@ -34,6 +34,8 @@ def extract_links_from_gdoc(gdoc_url):
 def clear_outputs():
     # Clear all files in uploads and outputs folder
     for folder in [OUTPUT_FOLDER, UPLOAD_FOLDER]:
+        if not os.path.exists(folder):
+            os.makedirs(folder, exist_ok=True)
         for filename in os.listdir(folder):
             file_path = os.path.join(folder, filename)
             try:
