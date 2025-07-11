@@ -113,8 +113,8 @@ async def render_and_save_pdf(link, index, browser):
 
 async def process_links_to_pdf(links):
     results = []
-
     expanded_links = []
+
     for link in links:
         if "docs.google.com/document" in link:
             print(f"[~] Google Doc detected: {link}. Extracting links...")
@@ -126,19 +126,22 @@ async def process_links_to_pdf(links):
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
+        semaphore = asyncio.Semaphore(3)  # Limit to 3 concurrent tabs
 
-        async def handle_link(link, idx):
-            print(f"[{idx}] Processing: {link}")
-            result = await render_and_save_pdf(link, idx, browser)
-            if result == "cloudflare_detected":
-                print(f"[~] Cloudflare detected on link {link}, but skipping headful mode due to server limitations.")
-                return (link, "", "", "failure")
-            return result
+        async def handle_link_with_semaphore(link, idx):
+            async with semaphore:
+                print(f"[{idx}] Processing: {link}")
+                result = await render_and_save_pdf(link, idx, browser)
+                if result == "cloudflare_detected":
+                    print(f"[~] Cloudflare detected on link {link}, but skipping headful mode due to server limitations.")
+                    return (link, "", "", "failure")
+                return result
 
-        tasks = [handle_link(link, idx) for idx, link in enumerate(expanded_links, 1)]
+        tasks = [handle_link_with_semaphore(link, idx) for idx, link in enumerate(expanded_links, 1)]
         results = await asyncio.gather(*tasks)
         await browser.close()
 
+    # Save CSV
     csv_path = os.path.join(OUTPUT_DIR, "log.csv")
     with open(csv_path, 'w', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
@@ -147,6 +150,7 @@ async def process_links_to_pdf(links):
             if isinstance(row, tuple) and len(row) == 4:
                 writer.writerow(row)
 
+    # Create ZIP
     zip_path = os.path.join(OUTPUT_DIR, "all_pdfs.zip")
     with ZipFile(zip_path, 'w') as zipf:
         for row in results:
